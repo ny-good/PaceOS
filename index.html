@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PaceOS — 개인 러닝 OS</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 <div class="app">
@@ -440,14 +441,16 @@
       <button class="map-modal-close" id="mapModalClose">✕</button>
     </div>
     <div class="map-frame-wrap">
-      <iframe id="mapFrame" class="map-frame" allowfullscreen loading="lazy"></iframe>
+      <div id="mapLeaflet" class="map-frame"></div>
     </div>
+    <div id="routeSteps" class="route-steps"></div>
     <div class="map-modal-links" id="mapExternalLinks"></div>
     <div class="map-modal-info" id="mapModalInfo"></div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
