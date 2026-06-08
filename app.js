@@ -1517,9 +1517,6 @@ function openCourseMap(id) {
       maxZoom: 18
     }).addTo(map);
 
-    // Draw route polyline
-    const poly = L.polyline(route.path, { color: route.color, weight: 5, opacity: 0.9 }).addTo(map);
-
     // Start marker (green)
     const startIcon = L.divIcon({
       html: `<div class="lf-start-icon">S</div>`, className: '', iconSize: [28, 28], iconAnchor: [14, 14]
@@ -1528,18 +1525,7 @@ function openCourseMap(id) {
       .bindPopup(`<b>🏁 출발</b><br>${route.startLabel}`)
       .addTo(map);
 
-    // End marker (only if loop = first ≠ last)
-    const last = route.path[route.path.length - 1];
-    const first = route.path[0];
-    const isLoop = Math.abs(last[0]-first[0]) < 0.001 && Math.abs(last[1]-first[1]) < 0.001;
-    if (!isLoop) {
-      const endIcon = L.divIcon({
-        html: `<div class="lf-end-icon">E</div>`, className: '', iconSize: [28, 28], iconAnchor: [14, 14]
-      });
-      L.marker(last, { icon: endIcon }).bindPopup('<b>🔄 반환점</b>').addTo(map);
-    }
-
-    map.fitBounds(poly.getBounds(), { padding: [24, 24] });
+    map.setView(route.center, route.zoom);
     _leafletMap = map;
   }, 80);
 }
