@@ -612,6 +612,64 @@ body {
   .form-grid-2 { grid-template-columns: 1fr; }
 }
 
+/* ── Training Roadmap ── */
+.rm-phase-bar {
+  display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 14px; height: 52px;
+}
+.rm-phase {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 2px; padding: 4px 6px; min-width: 0; transition: flex .3s;
+}
+.rm-base  { background: #1e3a2f; color: #4ade80; }
+.rm-build { background: #1e2a45; color: #60a5fa; }
+.rm-peak  { background: #3a1e1e; color: #f87171; }
+.rm-taper { background: #2a2a1e; color: #facc15; }
+.rm-phase-lbl { font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rm-phase-wk  { font-size: 9px; opacity: .75; }
+
+.rm-weeks-wrap { overflow-x: auto; padding-bottom: 4px; }
+.rm-weeks {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 90px; min-width: max-content; padding: 4px 0;
+}
+.rm-week {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  width: 30px; flex-shrink: 0; cursor: default; gap: 2px;
+}
+.rm-wbar {
+  width: 22px; border-radius: 4px 4px 0 0; min-height: 4px; transition: height .3s;
+}
+.rm-wk-base  .rm-wbar { background: #4ade80; }
+.rm-wk-build .rm-wbar { background: #60a5fa; }
+.rm-wk-peak  .rm-wbar { background: #f87171; }
+.rm-wk-taper .rm-wbar { background: #facc15; }
+.rm-rec      .rm-wbar { background: #94a3b8; }
+.rm-wlbl { font-size: 9px; color: var(--text-muted); }
+.rm-wkm  { font-size: 9px; color: var(--text-muted); }
+
+.rm-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.rm-leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+.rm-leg-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.rm-base  .rm-leg-dot { background: #4ade80; }
+.rm-build .rm-leg-dot { background: #60a5fa; }
+.rm-peak  .rm-leg-dot { background: #f87171; }
+.rm-taper .rm-leg-dot { background: #facc15; }
+.rm-rec   .rm-leg-dot { background: #94a3b8; }
+
+/* Phase badge in checklist week header */
+.cl-phase-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  vertical-align: middle;
+}
+.cl-ph-base  { background: #1e3a2f; color: #4ade80; }
+.cl-ph-build { background: #1e2a45; color: #60a5fa; }
+.cl-ph-peak  { background: #3a1e1e; color: #f87171; }
+.cl-ph-taper { background: #2a2a1e; color: #facc15; }
+
 /* ── Toast ── */
 #toast {
   position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);

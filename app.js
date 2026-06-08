@@ -248,6 +248,154 @@ function makePlan(v, calc) {
   return [REST('월','MON'),INTERVAL('화','TUE',ikm),EASY('수','WED',ekm),TEMPO('목','THU',tkm),REST('금','FRI','롱런 전날 휴식'),LONGRUN('토','SAT',lkm),RECOVERY('일','SUN',rkm)];
 }
 function defaultWeeklyKm(d) { return { '5k':25, '10k':35, 'half':50, 'full':60 }[d] || 40; }
+
+// ── Periodized Plan ──────────────────────────────
+
+const PHASE_META = {
+  base:  { label:'기초 빌드업',    emoji:'🌱', desc:'유산소 기반 형성 · 적응 단계' },
+  build: { label:'훈련 강도 증가', emoji:'💪', desc:'스피드 훈련 도입 · 거리 증가' },
+  peak:  { label:'피크 훈련',      emoji:'🔥', desc:'최고 강도 & 최장 거리 주간' },
+  taper: { label:'테이퍼링',       emoji:'🏁', desc:'컨디션 최적화 · 레이스 준비' },
+};
+
+const LONG_RUN_CAPS = {
+  base:  { '5k':10, '10k':15, 'half':19, 'full':26 },
+  build: { '5k':13, '10k':19, 'half':24, 'full':32 },
+  peak:  { '5k':15, '10k':22, 'half':28, 'full':36 },
+  taper: { '5k': 9, '10k':13, 'half':17, 'full':22 },
+};
+
+function getPhase(week, total) {
+  if (total <= 2) return week === total ? 'taper' : 'base';
+  const taperLen   = Math.min(3, Math.max(1, Math.round(total * 0.15)));
+  const peakLen    = Math.min(3, Math.max(1, Math.round(total * 0.13)));
+  const taperStart = total - taperLen + 1;
+  const peakStart  = taperStart - peakLen;
+  const buildStart = Math.max(2, Math.round(total * 0.25) + 1);
+  if (week >= taperStart) return 'taper';
+  if (week >= peakStart)  return 'peak';
+  if (week >= buildStart) return 'build';
+  return 'base';
+}
+
+function calcWeekKm(week, total, baseKm, dist) {
+  const phase      = getPhase(week, total);
+  const isRec      = week % 4 === 0 && phase !== 'taper' && total > 4;
+  const maxMult    = { '5k':1.3, '10k':1.45, 'half':1.6, 'full':1.75 }[dist] || 1.5;
+  const taperLen   = Math.min(3, Math.max(1, Math.round(total * 0.15)));
+  const taperStart = total - taperLen + 1;
+
+  let mult;
+  if (phase === 'taper') {
+    const fromEnd = total - week;
+    mult = fromEnd === 0 ? 0.35 : fromEnd === 1 ? 0.50 : 0.65;
+  } else if (isRec) {
+    mult = 0.72;
+  } else if (phase === 'peak') {
+    mult = maxMult;
+  } else {
+    const prog = total > 2 ? (week - 1) / Math.max(1, taperStart - 2) : 0;
+    mult = 0.85 + prog * (maxMult * 0.95 - 0.85);
+  }
+  return Math.max(15, Math.round(baseKm * mult / 5) * 5);
+}
+
+function makeWeekDays(v, calc, weekKm, phase) {
+  const { easyPace, tempoPace, intervalPace, longRunPace, recoveryPace } = calc;
+  const runs = parseInt(v.runsPerWeek);
+  const dist = v.targetDistance;
+  const inj  = v.injury === 'yes';
+
+  const REST     = (d,a,desc='완전한 휴식 또는 스트레칭') => ({ day:d,abbr:a,type:'rest',badge:'b-rest',name:'휴식',desc,pace:null,km:null });
+  const EASY     = (d,a,km,desc='편안한 대화 가능 페이스') => ({ day:d,abbr:a,type:'easy',badge:'b-easy',name:'이지런',desc,pace:easyPace,km });
+  const TEMPO    = (d,a,km,desc='지속 가능한 불편한 페이스 (20~40분)') => ({ day:d,abbr:a,type:'tempo',badge:'b-tempo',name:'템포런',desc,pace:tempoPace,km });
+  const INTERVAL = (d,a,km,desc='400m~1km 반복 · 충분한 휴식 포함') => ({ day:d,abbr:a,type:'interval',badge:'b-interval',name:'인터벌',desc,pace:intervalPace,km });
+  const LONGRUN  = (d,a,km) => ({ day:d,abbr:a,type:'longrun',badge:'b-longrun',name:'롱런',desc:'여유 있는 대화 페이스 유지',pace:longRunPace,km });
+  const RECOVERY = (d,a,km) => ({ day:d,abbr:a,type:'recovery',badge:'b-recovery',name:'회복 조깅',desc:'매우 가볍게 · 30분 이내',pace:recoveryPace,km });
+
+  if (inj) return [
+    REST('월','MON','완전 휴식 및 아이싱'), EASY('화','TUE',Math.max(5,Math.round(weekKm*.20)),'통증 없는 가벼운 조깅'),
+    REST('수','WED','스트레칭 및 폼롤러'), RECOVERY('목','THU',Math.max(4,Math.round(weekKm*.15))),
+    REST('금','FRI','완전 휴식'), EASY('토','SAT',Math.max(8,Math.round(weekKm*.30)),'통증 없는 편안한 달리기'),
+    REST('일','SUN','완전 휴식 또는 산책'),
+  ];
+
+  const cap  = (LONG_RUN_CAPS[phase] || LONG_RUN_CAPS.build)[dist] || 22;
+  const lkm  = Math.min(cap, Math.max(8, Math.round(weekKm * (dist === 'full' ? 0.35 : 0.40))));
+  const rem  = Math.max(10, weekKm - lkm);
+  const ekm  = Math.max(5, Math.round(rem * 0.35));
+  const e2km = Math.max(5, Math.round(rem * 0.22));
+  const tkm  = Math.max(5, Math.round(rem * 0.28));
+  const ikm  = Math.max(4, Math.round(rem * 0.20));
+  const rkm  = Math.max(4, Math.round(rem * 0.12));
+
+  const isTaper = phase === 'taper';
+  const hasInterval = phase !== 'base' && runs >= 4;
+  const tDesc = isTaper ? '레이스 페이스 감각 유지 (15~25분)' : '지속 가능한 불편한 페이스 (20~40분)';
+  const iDesc = isTaper ? '짧은 인터벌 · 다리 각성 목적' : '400m~1km 반복 · 충분한 휴식 포함';
+
+  const SPD = hasInterval
+    ? INTERVAL('화','TUE', isTaper ? Math.max(4, Math.round(ikm*.7)) : ikm, iDesc)
+    : EASY('화','TUE', ekm);
+
+  if (runs <= 2) return [REST('월','MON'),REST('화','TUE'),EASY('수','WED',Math.round(weekKm*.45)),REST('목','THU'),REST('금','FRI','롱런 전날 휴식'),LONGRUN('토','SAT',lkm),REST('일','SUN')];
+  if (runs === 3) return [REST('월','MON'),REST('화','TUE'),EASY('수','WED',ekm),(phase==='base'?EASY('목','THU',e2km):TEMPO('목','THU',isTaper?Math.max(5,Math.round(tkm*.7)):tkm,tDesc)),REST('금','FRI','롱런 전날 휴식'),LONGRUN('토','SAT',lkm),REST('일','SUN')];
+  if (runs === 4) return [REST('월','MON'),SPD,EASY('수','WED',ekm),TEMPO('목','THU',isTaper?Math.max(5,Math.round(tkm*.7)):tkm,tDesc),REST('금','FRI','롱런 전날 휴식'),LONGRUN('토','SAT',lkm),REST('일','SUN')];
+  return [REST('월','MON'),SPD,EASY('수','WED',ekm),TEMPO('목','THU',isTaper?Math.max(5,Math.round(tkm*.7)):tkm,tDesc),REST('금','FRI','롱런 전날 휴식'),LONGRUN('토','SAT',lkm),RECOVERY('일','SUN',isTaper?Math.max(4,Math.round(rkm*.6)):rkm)];
+}
+
+function makeFullPlan(v, calc) {
+  const total  = v.weeksLeft;
+  const baseKm = v.weeklyKm || defaultWeeklyKm(v.targetDistance);
+  return Array.from({ length: total }, (_, i) => {
+    const weekNum    = i + 1;
+    const phase      = getPhase(weekNum, total);
+    const isRecovery = weekNum % 4 === 0 && phase !== 'taper' && total > 4;
+    const weekKm     = calcWeekKm(weekNum, total, baseKm, v.targetDistance);
+    const effPhase   = isRecovery ? 'base' : phase;
+    const meta       = PHASE_META[phase];
+    return { weekNum, phase, isRecovery, label: isRecovery ? '회복 주' : meta.label, emoji: isRecovery ? '😴' : meta.emoji, weekKm, days: makeWeekDays(v, calc, weekKm, effPhase) };
+  });
+}
+
+function renderRoadmap(fullPlan) {
+  if (!fullPlan.length) return '';
+  const total  = fullPlan.length;
+  const maxKm  = Math.max(...fullPlan.map(w => w.weekKm));
+
+  const phaseSections = [];
+  let cur = null;
+  fullPlan.forEach(w => {
+    if (!cur || cur.phase !== w.phase) { cur = { phase: w.phase, start: w.weekNum, end: w.weekNum, count: 1 }; phaseSections.push(cur); }
+    else { cur.end = w.weekNum; cur.count++; }
+  });
+
+  const phaseBar = phaseSections.map(s => {
+    const m = PHASE_META[s.phase];
+    return `<div class="rm-phase rm-${s.phase}" style="flex:${s.count}">
+      <span class="rm-phase-lbl">${m.emoji} ${m.label}</span>
+      <span class="rm-phase-wk">${s.start}~${s.end}주</span>
+    </div>`;
+  }).join('');
+
+  const weekBars = fullPlan.map(w => {
+    const h = Math.round(w.weekKm / maxKm * 100);
+    return `<div class="rm-week rm-wk-${w.phase}${w.isRecovery ? ' rm-rec' : ''}" title="${w.emoji} ${w.label} · ${w.weekKm}km">
+      <div class="rm-wbar" style="height:${h}%"></div>
+      <div class="rm-wlbl">W${w.weekNum}</div>
+      <div class="rm-wkm">${w.weekKm}</div>
+    </div>`;
+  }).join('');
+
+  const legend = Object.entries(PHASE_META).map(([ph, m]) =>
+    `<span class="rm-leg rm-${ph}"><span class="rm-leg-dot"></span>${m.label}</span>`
+  ).join('') + `<span class="rm-leg rm-rec"><span class="rm-leg-dot"></span>회복 주</span>`;
+
+  return `
+    <div class="rm-phase-bar">${phaseBar}</div>
+    <div class="rm-weeks-wrap"><div class="rm-weeks">${weekBars}</div></div>
+    <div class="rm-legend">${legend}</div>`;
+}
 function makeStrategy(v, calc) {
   const { tDist, tPace } = calc;
   const zones = [
@@ -428,6 +576,7 @@ function renderGoalResults(v, calc, plan, strat) {
       <div class="strat-title">🥤 보급 전략</div>
       <ul class="supply-list">${strat.supply.map(s => `<li class="supply-item"><span class="s-icon">${s.icon}</span><span>${s.text}</span></li>`).join('')}</ul>
     </div>`;
+  $('trainingRoadmap').innerHTML = renderRoadmap(makeFullPlan(v, calc));
   $('gearRecs').innerHTML = renderGearRecs(v.targetDistance);
   $('ytChannels').innerHTML = renderYouTubeChannels();
   $('results').classList.remove('hidden');
@@ -462,7 +611,7 @@ function onSavePlan() {
   const err = validateGoal(v);
   if (err) { alert(err); return; }
   const calc = calcGoal(v);
-  const template = makePlan(v, calc);
+  const fullPlan = makeFullPlan(v, calc);
   const plans = loadPlans();
   const plan = {
     id: Date.now(),
@@ -470,7 +619,8 @@ function onSavePlan() {
     label: `${DIST_LABEL[v.targetDistance]} ${fmtTime(calc.tSec)} 도전`,
     goalValues: v,
     paces: { easy:calc.easyPace, tempo:calc.tempoPace, interval:calc.intervalPace, longrun:calc.longRunPace, recovery:calc.recoveryPace },
-    weeklyTemplate: template,
+    weeks: fullPlan,
+    weeklyTemplate: fullPlan[0]?.days ?? [],
     weeksLeft: v.weeksLeft,
     completions: {}
   };
@@ -528,8 +678,9 @@ function renderSavedPlans() {
 function renderSavedPlanCard(plan) {
   const comp    = plan.completions || {};
   const tmpl    = plan.weeklyTemplate;
-  const actDays = tmpl.filter(d => d.type !== 'rest').length;
-  const totalSlots = plan.weeksLeft * actDays;
+  const totalSlots = plan.weeks
+    ? plan.weeks.reduce((s, w) => s + w.days.filter(d => d.type !== 'rest').length, 0)
+    : plan.weeksLeft * tmpl.filter(d => d.type !== 'rest').length;
   const doneCount  = Object.keys(comp).length;
   const pct = totalSlots > 0 ? Math.min(100, Math.round(doneCount / totalSlots * 100)) : 0;
   const startDate  = new Date(plan.savedAt + 'T00:00:00');
@@ -560,22 +711,25 @@ function renderChecklist(plan, weekNum) {
   const w    = weekNum;
   const tw   = plan.weeksLeft;
   const comp = plan.completions || {};
-  const tmpl = plan.weeklyTemplate;
+  const wObj = plan.weeks?.[w - 1];
+  const days = wObj?.days ?? plan.weeklyTemplate;
 
   let wStart = Math.max(1, w - 2);
   let wEnd   = Math.min(tw, wStart + 4);
   if (wEnd - wStart < 4) wStart = Math.max(1, wEnd - 4);
 
-  const actDays = tmpl.filter(d => d.type !== 'rest').length;
   const wkBtns = [];
   for (let i = wStart; i <= wEnd; i++) {
-    const wDone = tmpl.filter((_, j) => comp[`w${i}_d${j}`]).length;
-    wkBtns.push(`<button class="wb${i === w ? ' wb-a' : ''}" onclick="setActiveWeek(${plan.id},${i})">W${i}<span class="wb-s">${wDone}/${actDays}</span></button>`);
+    const wDays  = plan.weeks?.[i - 1]?.days ?? plan.weeklyTemplate;
+    const actCnt = wDays.filter(d => d.type !== 'rest').length;
+    const wDone  = wDays.filter((_, j) => comp[`w${i}_d${j}`]).length;
+    wkBtns.push(`<button class="wb${i === w ? ' wb-a' : ''}" onclick="setActiveWeek(${plan.id},${i})">W${i}<span class="wb-s">${wDone}/${actCnt}</span></button>`);
   }
 
-  const weekDone = tmpl.filter((_, j) => comp[`w${w}_d${j}`]).length;
+  const weekDone = days.filter((_, j) => comp[`w${w}_d${j}`]).length;
+  const phaseInfo = wObj ? `<span class="cl-phase-badge cl-ph-${wObj.phase}">${wObj.emoji} ${wObj.label} · ${wObj.weekKm}km</span>` : '';
 
-  const dayRows = tmpl.map((day, idx) => {
+  const dayRows = days.map((day, idx) => {
     const key  = `w${w}_d${idx}`;
     const done = !!comp[key];
     const isRest = day.type === 'rest';
@@ -599,7 +753,7 @@ function renderChecklist(plan, weekNum) {
         <div class="cl-wbtns">${wkBtns.join('')}</div>
         ${w < tw ? `<button class="cl-arr" onclick="setActiveWeek(${plan.id},${w+1})">▶</button>` : '<span></span>'}
       </div>
-      <div class="cl-week-hd">Week ${w} <span class="cl-wof">/ ${tw}주</span> <span class="cl-wdone">${weekDone} / ${tmpl.length}일 완료</span></div>
+      <div class="cl-week-hd">Week ${w} <span class="cl-wof">/ ${tw}주</span> ${phaseInfo} <span class="cl-wdone">${weekDone} / ${days.length}일 완료</span></div>
       <div class="cl-days">${dayRows}</div>
     </div>`;
 }
