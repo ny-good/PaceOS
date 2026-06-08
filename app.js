@@ -1525,6 +1525,17 @@ function openCourseMap(id) {
       .bindPopup(`<b>🏁 출발</b><br>${route.startLabel}`)
       .addTo(map);
 
+    // End marker for non-loop routes
+    const first = route.path[0];
+    const last = route.path[route.path.length - 1];
+    const isLoop = Math.abs(last[0]-first[0]) < 0.001 && Math.abs(last[1]-first[1]) < 0.001;
+    if (!isLoop) {
+      const endIcon = L.divIcon({
+        html: `<div class="lf-end-icon">E</div>`, className: '', iconSize: [28, 28], iconAnchor: [14, 14]
+      });
+      L.marker(last, { icon: endIcon }).bindPopup('<b>🔄 반환점</b>').addTo(map);
+    }
+
     map.setView(route.center, route.zoom);
     _leafletMap = map;
   }, 80);
