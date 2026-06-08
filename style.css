@@ -478,6 +478,21 @@ body {
 }
 .btn-yt:hover { border-color: #ff4e4e; color: #ff4e4e; }
 
+/* ── Charts ── */
+.ct-tabs {
+  display: flex; gap: 6px; margin-bottom: 14px;
+}
+.ct-tab {
+  flex: 1; padding: 7px 4px; font-size: 12px; font-weight: 700;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--bg-card2); color: var(--text2); cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.ct-tab:hover  { border-color: var(--border-h); color: var(--text); }
+.ct-act { border-color: var(--accent) !important; color: var(--accent) !important; background: var(--accent-dim) !important; }
+.ct-pane { position: relative; }
+.ct-pane canvas { display: block; width: 100% !important; }
+
 /* ── Save Plan Button ── */
 .btn-save-plan {
   display: block; width: 100%; margin-top: 8px;

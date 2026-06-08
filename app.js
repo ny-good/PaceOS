@@ -744,6 +744,100 @@ function generateInsights(runs) {
   return insights;
 }
 
+// ── Charts ─────────────────────────────────────
+
+const TYPE_COLORS = {
+  'Easy':'#4fc3f7','Tempo':'#ffa726','Interval':'#ef5350',
+  'Long Run':'#ab47bc','Race':'#ff5252','Recovery':'#66bb6a'
+};
+let _charts = {};
+
+const CHART_BASE = {
+  responsive: true, maintainAspectRatio: true,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid:{ color:'rgba(255,255,255,.06)' }, ticks:{ color:'#888899', font:{ size:11 } } },
+    y: { grid:{ color:'rgba(255,255,255,.06)' }, ticks:{ color:'#888899', font:{ size:11 } } }
+  }
+};
+
+function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; } }
+
+function buildWeeklyChart(runs) {
+  destroyChart('weekly');
+  const ctx = $('chartWeekly'); if (!ctx) return;
+  const map = {};
+  runs.forEach(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    const diff = d.getDay() === 0 ? -6 : 1 - d.getDay();
+    const mon = new Date(d); mon.setDate(d.getDate() + diff);
+    const k = mon.toISOString().split('T')[0];
+    map[k] = (map[k] || 0) + r.km;
+  });
+  const sorted = Object.entries(map).sort((a,b) => a[0].localeCompare(b[0])).slice(-12);
+  const labels = sorted.map(([k]) => { const d = new Date(k+'T00:00:00'); return `${d.getMonth()+1}/${d.getDate()}`; });
+  const data   = sorted.map(([,v]) => Math.round(v * 10) / 10);
+  _charts.weekly = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor:'rgba(0,255,136,.2)', borderColor:'#00ff88', borderWidth:1.5, borderRadius:4 }] },
+    options: { ...CHART_BASE, aspectRatio:2.2,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => c.parsed.y + ' km' } } },
+      scales:{ ...CHART_BASE.scales, y:{ ...CHART_BASE.scales.y, beginAtZero:true, ticks:{ color:'#888899', font:{size:11}, callback: v => v+'km' } } }
+    }
+  });
+}
+
+function buildPaceChart(runs) {
+  destroyChart('pace');
+  const ctx = $('chartPace'); if (!ctx) return;
+  const valid = [...runs].filter(r => r.pace > 120 && r.pace < 1200).slice(0,30).reverse();
+  if (valid.length < 2) return;
+  const labels = valid.map(r => { const d = new Date(r.date+'T00:00:00'); return `${d.getMonth()+1}/${d.getDate()}`; });
+  const data   = valid.map(r => Math.round(r.pace / 6) / 10);
+  const fmtV   = v => { const m=Math.floor(v), s=Math.round((v-m)*60); return `${m}:${String(s).padStart(2,'0')}`; };
+  _charts.pace = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,.1)', borderWidth:2, tension:0.35, pointRadius:3, pointBackgroundColor:'#60a5fa', fill:true }] },
+    options: { ...CHART_BASE, aspectRatio:2.2,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => fmtV(c.parsed.y)+'/km' } } },
+      scales:{ ...CHART_BASE.scales, y:{ ...CHART_BASE.scales.y, reverse:true, ticks:{ color:'#888899', font:{size:11}, callback: fmtV } } }
+    }
+  });
+}
+
+function buildTypeChart(runs) {
+  destroyChart('type');
+  const ctx = $('chartType'); if (!ctx) return;
+  const counts = {};
+  runs.forEach(r => { counts[r.type] = (counts[r.type]||0) + 1; });
+  const labels = Object.keys(counts), data = Object.values(counts);
+  const colors = labels.map(l => TYPE_COLORS[l] || '#888899');
+  _charts.type = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors.map(c=>c+'55'), borderColor: colors, borderWidth:1.5, hoverOffset:6 }] },
+    options: { responsive:true, maintainAspectRatio:true, aspectRatio:1.8,
+      plugins:{
+        legend:{ position:'right', labels:{ color:'#888899', font:{size:11}, boxWidth:12, padding:10 } },
+        tooltip:{ callbacks:{ label: c => `${c.label} ${c.parsed}회` } }
+      }
+    }
+  });
+}
+
+function initChartTabs(runs) {
+  document.querySelectorAll('.ct-tab').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.ct-tab').forEach(b => b.classList.remove('ct-act'));
+      document.querySelectorAll('.ct-pane').forEach(p => p.classList.add('hidden'));
+      btn.classList.add('ct-act');
+      $('ctPane-' + btn.dataset.t).classList.remove('hidden');
+      if (btn.dataset.t === 'weekly') buildWeeklyChart(runs);
+      else if (btn.dataset.t === 'pace') buildPaceChart(runs);
+      else if (btn.dataset.t === 'type') buildTypeChart(runs);
+    };
+  });
+}
+
 function renderLog() {
   const runs = loadRuns();
   const hasRuns = runs.length > 0;
@@ -751,6 +845,10 @@ function renderLog() {
   $('logDashboard').classList.toggle('hidden', !hasRuns);
   $('runListSection').classList.toggle('hidden', !hasRuns);
   if (!hasRuns) return;
+
+  // Charts
+  initChartTabs(runs);
+  buildWeeklyChart(runs);
 
   // Stats
   const s = calcStats(runs);

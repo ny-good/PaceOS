@@ -265,6 +265,18 @@
           </div>
         </div>
 
+        <div class="card" id="chartsCard">
+          <h3 class="card-title">📈 훈련 차트</h3>
+          <div class="ct-tabs">
+            <button class="ct-tab ct-act" data-t="weekly">주간 거리</button>
+            <button class="ct-tab" data-t="pace">페이스 추이</button>
+            <button class="ct-tab" data-t="type">훈련 분포</button>
+          </div>
+          <div class="ct-pane" id="ctPane-weekly"><canvas id="chartWeekly"></canvas></div>
+          <div class="ct-pane hidden" id="ctPane-pace"><canvas id="chartPace"></canvas></div>
+          <div class="ct-pane hidden" id="ctPane-type"><canvas id="chartType"></canvas></div>
+        </div>
+
         <div class="card">
           <h3 class="card-title">개인 최고 기록 (PB)</h3>
           <div id="pbGrid" class="pb-grid"></div>
@@ -431,6 +443,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
