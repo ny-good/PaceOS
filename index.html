@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PaceOS — 개인 러닝 OS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="logo"><span class="logo-icon">⚡</span><span class="logo-text">Pace<span class="accent">OS</span></span></div>
+    <p class="tagline">데이터 기반 개인 러닝 OS</p>
+  </header>
+
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" data-tab="goal">🎯 목표 기록</button>
+    <button class="tab-btn" data-tab="log">📊 기록 분석</button>
+    <button class="tab-btn" data-tab="knowledge">📚 지식</button>
+    <button class="tab-btn" data-tab="courses">📍 서울 코스</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- ══ TAB 1: 목표 기록 ══ -->
+    <section id="tab-goal" class="tab-section active">
+
+      <div class="card">
+        <h3 class="card-title">목표 레이스</h3>
+        <div class="form-group">
+          <label class="form-label">목표 거리</label>
+          <div class="radio-group">
+            <label class="radio-btn"><input type="radio" name="targetDistance" value="5k"><span>5K</span></label>
+            <label class="radio-btn"><input type="radio" name="targetDistance" value="10k"><span>10K</span></label>
+            <label class="radio-btn"><input type="radio" name="targetDistance" value="half"><span>하프</span></label>
+            <label class="radio-btn"><input type="radio" name="targetDistance" value="full" checked><span>풀</span></label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">목표 기록</label>
+          <div class="time-row">
+            <div class="time-col"><input type="number" id="targetHour" min="0" max="9" class="time-input" placeholder="0"><span class="time-unit">시간</span></div>
+            <span class="time-sep">:</span>
+            <div class="time-col"><input type="number" id="targetMin" min="0" max="59" class="time-input" placeholder="55"><span class="time-unit">분</span></div>
+            <span class="time-sep">:</span>
+            <div class="time-col"><input type="number" id="targetSec" min="0" max="59" class="time-input" placeholder="00"><span class="time-unit">초</span></div>
+          </div>
+          <div class="pace-auto-display">목표 페이스 <span id="targetPacePreview" class="accent fw-bold">--:--</span> /km</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">최근 기록</h3>
+        <div class="form-group">
+          <label class="form-label">기록 거리</label>
+          <div class="radio-group">
+            <label class="radio-btn"><input type="radio" name="recentDistance" value="5k"><span>5K</span></label>
+            <label class="radio-btn"><input type="radio" name="recentDistance" value="10k" checked><span>10K</span></label>
+            <label class="radio-btn"><input type="radio" name="recentDistance" value="half"><span>하프</span></label>
+            <label class="radio-btn"><input type="radio" name="recentDistance" value="full"><span>풀</span></label>
+            <label class="radio-btn"><input type="radio" name="recentDistance" value="none"><span>없음</span></label>
+          </div>
+        </div>
+        <div class="form-group" id="recentTimeGroup">
+          <label class="form-label">기록</label>
+          <div class="time-row">
+            <div class="time-col"><input type="number" id="recentHour" min="0" max="9" class="time-input" placeholder="0"><span class="time-unit">시간</span></div>
+            <span class="time-sep">:</span>
+            <div class="time-col"><input type="number" id="recentMin" min="0" max="59" class="time-input" placeholder="50"><span class="time-unit">분</span></div>
+            <span class="time-sep">:</span>
+            <div class="time-col"><input type="number" id="recentSec" min="0" max="59" class="time-input" placeholder="00"><span class="time-unit">초</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">훈련 환경</h3>
+        <div class="form-group">
+          <label class="form-label" for="runsPerWeek">주간 러닝 횟수</label>
+          <select id="runsPerWeek" class="select-input">
+            <option value="2">주 2회</option>
+            <option value="3">주 3회</option>
+            <option value="4" selected>주 4회</option>
+            <option value="5">주 5회</option>
+            <option value="6">주 6회 이상</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="weeklyKm">현재 주간 러닝 거리 (km)</label>
+          <input type="number" id="weeklyKm" min="0" max="250" class="text-input" placeholder="40">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="weeksLeft">대회까지 남은 주</label>
+          <input type="number" id="weeksLeft" min="1" max="52" class="text-input" placeholder="16">
+        </div>
+        <div class="form-group">
+          <label class="form-label">부상 여부</label>
+          <div class="radio-group">
+            <label class="radio-btn"><input type="radio" name="injury" value="no" checked><span>없음</span></label>
+            <label class="radio-btn"><input type="radio" name="injury" value="yes"><span>있음</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorMsg" class="error-msg hidden"></div>
+      <div class="btn-row">
+        <button id="generateBtn" class="btn btn-primary">⚡ 훈련 플랜 생성</button>
+        <button id="resetBtn" class="btn btn-ghost">↺ 초기화</button>
+      </div>
+
+      <div id="results" class="hidden">
+        <h2 class="results-heading">훈련 분석 결과</h2>
+        <div class="summary-grid">
+          <div class="card stat-card"><div class="stat-label">목표 페이스</div><div class="stat-value accent" id="rTargetPace">--</div><div class="stat-unit">/km</div></div>
+          <div class="card stat-card"><div class="stat-label">예상 기록</div><div class="stat-value" id="rPredicted">--</div><div class="stat-unit" id="rPredictedSub">최근 기록 기반</div></div>
+          <div class="card stat-card"><div class="stat-label">달성 난이도</div><div class="stat-value" id="rDifficulty">--</div><div class="stat-unit" id="rDifficultySub">--</div></div>
+          <div class="card stat-card"><div class="stat-label">달성 확률</div><div class="stat-value accent" id="rProbability">--</div><div class="stat-unit">현재 훈련 수준</div></div>
+          <div class="card stat-card"><div class="stat-label">추천 주간 거리</div><div class="stat-value" id="rWeeklyDist">--</div><div class="stat-unit">km / week</div></div>
+          <div class="card stat-card wide"><div class="stat-label">핵심 개선 포인트</div><div id="rKeyPoints" class="key-points"></div></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">훈련 페이스 가이드</h3>
+          <div class="pace-grid">
+            <div class="pace-item"><div class="pace-badge easy">이지런</div><div class="pace-num" id="rEasy">--</div><div class="pace-km">/km</div></div>
+            <div class="pace-item"><div class="pace-badge tempo">템포런</div><div class="pace-num" id="rTempo">--</div><div class="pace-km">/km</div></div>
+            <div class="pace-item"><div class="pace-badge interval">인터벌</div><div class="pace-num" id="rInterval">--</div><div class="pace-km">/km</div></div>
+            <div class="pace-item"><div class="pace-badge longrun">롱런</div><div class="pace-num" id="rLongRun">--</div><div class="pace-km">/km</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">주간 훈련 플랜</h3>
+          <div id="injuryAlert" class="injury-alert hidden">⚠️ 통증이 지속되면 반드시 전문의 상담이 필요합니다. 훈련 강도를 낮추고 충분한 휴식을 취하세요.</div>
+          <div id="weeklyPlan" class="weekly-plan"></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">레이스 전략</h3>
+          <div id="raceStrategy"></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">👟 러닝 장비 추천 (가격대별)</h3>
+          <div id="gearRecs"></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">📺 요즘 핫한 러닝 유튜브</h3>
+          <div id="ytChannels"></div>
+        </div>
+        <button id="savePlanBtn" class="btn btn-save-plan">💾 이 플랜 저장하기</button>
+      </div>
+
+      <!-- 저장된 훈련 플랜 & 체크리스트 -->
+      <div id="savedPlansSection" class="saved-plans-section">
+        <h2 class="section-heading">📋 나의 훈련 플랜</h2>
+        <p id="savedPlansEmpty" class="sp-empty">저장된 플랜이 없어요. 훈련 플랜을 생성하고 💾 저장하기 버튼을 눌러보세요!</p>
+        <div id="savedPlansList"></div>
+      </div>
+
+    </section>
+
+    <!-- ══ TAB 2: 기록 분석 ══ -->
+    <section id="tab-log" class="tab-section">
+
+      <div class="log-top-bar">
+        <h2 class="section-heading">나의 러닝 기록</h2>
+        <button id="toggleAddRun" class="btn btn-primary btn-sm">＋ 기록 추가</button>
+      </div>
+
+      <!-- Add Run Form -->
+      <div id="addRunForm" class="card hidden">
+        <h3 class="card-title">새 기록 입력</h3>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="logDate">날짜</label>
+            <input type="date" id="logDate" class="text-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="logKm">거리 (km)</label>
+            <input type="number" id="logKm" min="0.1" max="200" step="0.01" class="text-input" placeholder="10.00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">기록 시간</label>
+          <div class="time-row">
+            <div class="time-col"><input type="number" id="logHour" min="0" max="9" class="time-input" placeholder="0"><span class="time-unit">시간</span></div>
+            <span class="time-sep">:</span>
+            <div class="time-col"><input type="number" id="logMin" min="0" max="59" class="time-input" placeholder="50"><span class="time-unit">분</span></div>
+            <span class="time-sep">:</span>
+            <div class="time-col"><input type="number" id="logSec" min="0" max="59" class="time-input" placeholder="00"><span class="time-unit">초</span></div>
+          </div>
+          <div class="pace-auto-display">평균 페이스 <span id="autoPaceVal" class="accent fw-bold">--:--</span> /km</div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="logCourse">코스명</label>
+            <input type="text" id="logCourse" class="text-input" placeholder="여의도 한강공원">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="logType">러닝 타입</label>
+            <select id="logType" class="select-input">
+              <option value="Easy">Easy — 이지런</option>
+              <option value="Tempo">Tempo — 템포런</option>
+              <option value="Interval">Interval — 인터벌</option>
+              <option value="Long Run">Long Run — 롱런</option>
+              <option value="Race">Race — 레이스</option>
+              <option value="Recovery">Recovery — 회복</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="logRpe">체감 난이도 RPE</label>
+            <select id="logRpe" class="select-input">
+              <option value="1">1 — 매우 쉬움</option>
+              <option value="2">2 — 쉬움</option>
+              <option value="3">3 — 가볍게 힘듦</option>
+              <option value="4">4 — 약간 힘듦</option>
+              <option value="5" selected>5 — 보통</option>
+              <option value="6">6 — 다소 힘듦</option>
+              <option value="7">7 — 힘듦</option>
+              <option value="8">8 — 매우 힘듦</option>
+              <option value="9">9 — 거의 한계</option>
+              <option value="10">10 — 최대 한계</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">컨디션</label>
+            <div class="radio-group">
+              <label class="radio-btn"><input type="radio" name="logCondition" value="좋음" checked><span>😊 좋음</span></label>
+              <label class="radio-btn"><input type="radio" name="logCondition" value="보통"><span>😐 보통</span></label>
+              <label class="radio-btn"><input type="radio" name="logCondition" value="나쁨"><span>😞 나쁨</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="logMemo">메모</label>
+          <textarea id="logMemo" class="text-input textarea" placeholder="훈련 느낌, 컨디션 메모 등 자유롭게 기록하세요" rows="2"></textarea>
+        </div>
+        <div class="btn-row">
+          <button id="saveRunBtn" class="btn btn-primary">💾 저장</button>
+          <button id="cancelAddRun" class="btn btn-ghost">취소</button>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="logEmpty" class="empty-state">
+        <div class="empty-icon">🏃</div>
+        <div class="empty-title">아직 기록이 없어요</div>
+        <div class="empty-desc">첫 번째 러닝 기록을 추가해보세요!</div>
+      </div>
+
+      <!-- Dashboard (shows when runs exist) -->
+      <div id="logDashboard" class="hidden">
+
+        <div class="card">
+          <h3 class="card-title">누적 통계</h3>
+          <div class="stats-grid">
+            <div class="stat-mini"><div class="stat-mini-val" id="st-totalRuns">0</div><div class="stat-mini-label">총 러닝</div></div>
+            <div class="stat-mini"><div class="stat-mini-val accent" id="st-totalKm">0</div><div class="stat-mini-label">총 거리 km</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="st-avgPace">--</div><div class="stat-mini-label">평균 페이스</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="st-longestKm">0</div><div class="stat-mini-label">최장 거리 km</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="st-fastestPace">--</div><div class="stat-mini-label">최고 페이스</div></div>
+            <div class="stat-mini"><div class="stat-mini-val accent" id="st-last7">0</div><div class="stat-mini-label">최근 7일 km</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="st-last30">0</div><div class="stat-mini-label">최근 30일 km</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="st-thisMonth">0</div><div class="stat-mini-label">이번 달 km</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="st-topType">--</div><div class="stat-mini-label">주요 타입</div></div>
+            <div class="stat-mini"><div class="stat-mini-val" id="st-avgRpe">--</div><div class="stat-mini-label">평균 RPE</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">개인 최고 기록 (PB)</h3>
+          <div id="pbGrid" class="pb-grid"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">성장 분석</h3>
+          <div id="insightsList" class="insights-list"></div>
+        </div>
+
+      </div>
+
+      <!-- Run list -->
+      <div id="runListSection" class="hidden">
+        <div class="run-list-header">
+          <h3 class="section-sub-heading">기록 목록</h3>
+          <button id="clearAllRuns" class="btn btn-danger btn-sm">전체 삭제</button>
+        </div>
+        <div id="runList" class="run-list"></div>
+      </div>
+
+    </section>
+
+    <!-- ══ TAB 3: 지식 라이브러리 ══ -->
+    <section id="tab-knowledge" class="tab-section">
+      <h2 class="section-heading">러닝 지식 라이브러리</h2>
+
+      <div class="knowledge-search-wrap">
+        <input type="text" id="knowledgeSearch" class="text-input search-input" placeholder="🔍  호흡, 부상, 하프, 젤, 페이스, 오버페이스...">
+      </div>
+
+      <div class="category-pills" id="categoryPills">
+        <button class="pill active" data-cat="all">전체</button>
+        <button class="pill" data-cat="training">💪 훈련법</button>
+        <button class="pill" data-cat="breathing">🌬️ 호흡법</button>
+        <button class="pill" data-cat="nutrition">🍌 영양/보급</button>
+        <button class="pill" data-cat="recovery">😴 회복</button>
+        <button class="pill" data-cat="form">🏃 러닝폼</button>
+        <button class="pill" data-cat="gear">👟 장비</button>
+        <button class="pill" data-cat="mental">🧠 멘탈</button>
+        <button class="pill" data-cat="beginner">🐣 초보자</button>
+        <button class="pill" data-cat="10k">⚡ 10K</button>
+        <button class="pill" data-cat="half">🏅 하프</button>
+        <button class="pill" data-cat="full">🏆 풀마라톤</button>
+        <button class="pill" data-cat="injury">🩹 부상 예방</button>
+        <button class="pill" data-cat="race">🚀 레이스 당일</button>
+      </div>
+
+      <div id="knowledgeCards" class="knowledge-grid"></div>
+      <div id="knowledgeEmpty" class="empty-state hidden">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">검색 결과가 없어요</div>
+        <div class="empty-desc">다른 키워드로 찾아보세요</div>
+      </div>
+    </section>
+
+    <!-- ══ TAB 4: 서울 코스 ══ -->
+    <section id="tab-courses" class="tab-section">
+      <h2 class="section-heading">서울 러닝 코스</h2>
+
+      <div class="card course-filter-card">
+        <h3 class="card-title">코스 필터</h3>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="cfPurpose">목적</label>
+            <select id="cfPurpose" class="select-input">
+              <option value="all">전체</option>
+              <option value="초보자">초보자</option>
+              <option value="5K">5K</option>
+              <option value="10K">10K</option>
+              <option value="하프">하프</option>
+              <option value="풀">풀</option>
+              <option value="롱런">롱런</option>
+              <option value="회복주">회복주</option>
+              <option value="언덕 훈련">언덕 훈련</option>
+              <option value="야간 러닝">야간 러닝</option>
+              <option value="직장인">직장인 러너</option>
+              <option value="시티런">시티런</option>
+              <option value="트레일">트레일 러닝</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cfArea">지역</label>
+            <select id="cfArea" class="select-input">
+              <option value="all">전체</option>
+              <option value="여의도">여의도</option>
+              <option value="반포">반포</option>
+              <option value="잠실">잠실</option>
+              <option value="성수">성수</option>
+              <option value="뚝섬">뚝섬/광진</option>
+              <option value="중구">중구/남산</option>
+              <option value="종로">종로/광화문</option>
+              <option value="송파">송파</option>
+              <option value="상암">상암</option>
+              <option value="마포">마포</option>
+              <option value="안양천">안양천</option>
+              <option value="탄천">탄천/강남</option>
+              <option value="양재천">양재천</option>
+              <option value="중랑천">중랑천/노원</option>
+              <option value="북한산">북한산/강북</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cfDifficulty">난이도</label>
+            <select id="cfDifficulty" class="select-input">
+              <option value="all">전체</option>
+              <option value="쉬움">쉬움</option>
+              <option value="중간">중간</option>
+              <option value="어려움">어려움</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cfType">코스 타입</label>
+            <select id="cfType" class="select-input">
+              <option value="all">전체</option>
+              <option value="한강 평지">한강 평지</option>
+              <option value="한강 장거리">한강 장거리</option>
+              <option value="공원+한강">공원+한강</option>
+              <option value="공원 순환">공원 순환</option>
+              <option value="순환 루프">순환 루프</option>
+              <option value="순환 코스">순환 코스</option>
+              <option value="하천 평지">하천 평지</option>
+              <option value="도심 하천">도심 하천</option>
+              <option value="도심 조깅">도심 조깅</option>
+              <option value="시티런">시티런</option>
+              <option value="언덕">언덕</option>
+              <option value="공원+언덕">공원+언덕</option>
+              <option value="트레일">트레일</option>
+            </select>
+          </div>
+        </div>
+        <button id="applyFilters" class="btn btn-primary">🔍 코스 찾기</button>
+      </div>
+
+      <div id="recommendedSection" class="hidden">
+        <h3 class="section-sub-heading"><span class="accent">⭐ 추천 코스</span></h3>
+        <div id="recommendedCourses" class="course-grid"></div>
+      </div>
+
+      <h3 class="section-sub-heading">모든 코스</h3>
+      <div id="allCourses" class="course-grid"></div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    PaceOS · 데이터 기반 개인 러닝 OS · 모든 데이터는 이 기기에만 저장됩니다
+  </footer>
+
+</div>
+
+<!-- Course Map Modal -->
+<div id="courseMapModal" class="map-modal-overlay hidden">
+  <div class="map-modal">
+    <div class="map-modal-header">
+      <div class="map-modal-title" id="mapModalTitle"></div>
+      <button class="map-modal-close" id="mapModalClose">✕</button>
+    </div>
+    <div class="map-frame-wrap">
+      <iframe id="mapFrame" class="map-frame" allowfullscreen loading="lazy"></iframe>
+    </div>
+    <div class="map-modal-links" id="mapExternalLinks"></div>
+    <div class="map-modal-info" id="mapModalInfo"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
