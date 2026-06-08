@@ -20,6 +20,7 @@
     <button class="tab-btn" data-tab="log">📊 기록 분석</button>
     <button class="tab-btn" data-tab="knowledge">📚 지식</button>
     <button class="tab-btn" data-tab="courses">📍 서울 코스</button>
+    <button class="tab-btn" data-tab="race">🏆 대회 일정</button>
   </nav>
 
   <main class="main">
@@ -423,6 +424,38 @@
 
       <h3 class="section-sub-heading">모든 코스</h3>
       <div id="allCourses" class="course-grid"></div>
+    </section>
+
+    <!-- ══ TAB 5: 대회 일정 ══ -->
+    <section id="tab-race" class="tab-section">
+      <h2 class="section-heading">🏆 마라톤 대회 일정</h2>
+
+      <!-- 필터 -->
+      <div class="race-filter-bar">
+        <select id="raceYear" class="race-sel">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+        </select>
+        <select id="raceDist" class="race-sel">
+          <option value="all">전체 거리</option>
+          <option value="풀">풀마라톤</option>
+          <option value="하프">하프</option>
+          <option value="10K">10K</option>
+        </select>
+        <select id="raceRegion" class="race-sel">
+          <option value="all">전국</option>
+          <option value="서울">서울</option>
+          <option value="경기">경기</option>
+          <option value="지방">지방</option>
+          <option value="해외">해외</option>
+        </select>
+        <label class="race-bk-toggle">
+          <input type="checkbox" id="raceBookmarked"> 북마크만
+        </label>
+      </div>
+
+      <!-- 월별 달력 -->
+      <div id="raceCalendar"></div>
     </section>
 
   </main>

@@ -1634,6 +1634,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Courses tab
   initCourses();
+
+  // Race tab
+  initRace();
 });
 
 // Expose handlers globally (called from inline onclick)
@@ -1643,3 +1646,158 @@ window.togglePlanChecklist  = togglePlanChecklist;
 window.setActiveWeek        = setActiveWeek;
 window.toggleCompletion     = toggleCompletion;
 window.onDeletePlan         = onDeletePlan;
+window.toggleRaceBookmark   = toggleRaceBookmark;
+
+// ═══════════════════════════════════════════════
+//  RACE CALENDAR (Tab 5)
+// ═══════════════════════════════════════════════
+
+const RACES = [
+  // ── 2025 ──
+  { id:'r001', year:2025, month:10, day:19,  name:'춘천마라톤',              loc:'춘천 (강원)',    region:'지방', dist:['풀','하프','10K'], official:'https://www.chuncheonmarathon.com', desc:'한강변 단풍 속 국내 최고 가을 마라톤' },
+  { id:'r002', year:2025, month:10, day:26,  name:'경주마라톤',              loc:'경주 (경북)',    region:'지방', dist:['풀','하프','10K'], official:'https://www.gjmarathon.com', desc:'세계문화유산 코스, 불국사·첨성대 경유' },
+  { id:'r003', year:2025, month:11, day:2,   name:'JTBC 서울마라톤',         loc:'잠실 (서울)',    region:'서울', dist:['풀','하프'], official:'https://jtbcmarathon.com', desc:'잠실올림픽주경기장 출발·도착, 야경 하프코스' },
+  { id:'r004', year:2025, month:11, day:2,   name:'중앙서울마라톤',           loc:'광화문 (서울)',  region:'서울', dist:['풀','하프','10K'], official:'https://www.joongang.co.kr/marathon', desc:'광화문~여의도 코스, 도심 야경 풀코스' },
+  { id:'r005', year:2025, month:11, day:9,   name:'부산국제마라톤',           loc:'부산 (경남)',    region:'지방', dist:['풀','하프','10K'], official:'https://bim.busan.go.kr', desc:'광안대교·해운대 해변 코스' },
+  { id:'r006', year:2025, month:11, day:2,   name:'뉴욕마라톤',              loc:'뉴욕 (미국)',    region:'해외', dist:['풀'], official:'https://www.nyrr.org/tcsnycmarathon', desc:'5개 자치구 통과 World Marathon Major' },
+
+  // ── 2026 ──
+  { id:'r010', year:2026, month:1,  day:11,  name:'제주국제마라톤',           loc:'제주시',        region:'지방', dist:['풀','하프','10K'], official:'https://jejumarathon.com', desc:'제주 해안도로 코스, 한겨울 따뜻한 기후' },
+  { id:'r011', year:2026, month:2,  day:22,  name:'서울하프마라톤 (한강)',     loc:'여의도 (서울)', region:'서울', dist:['하프','10K'], official:'', desc:'여의도 한강공원 봄 개막 하프마라톤' },
+  { id:'r012', year:2026, month:3,  day:15,  name:'동아마라톤 (서울국제)',     loc:'광화문 (서울)', region:'서울', dist:['풀','하프','10K'], official:'https://donga-marathon.com', desc:'국내 최고 권위 풀코스, 광화문 출발 서울 도심 코스' },
+  { id:'r013', year:2026, month:3,  day:1,   name:'삼일절기념 마라톤',        loc:'서울',          region:'서울', dist:['10K','5K'], official:'', desc:'광화문·청계천 도심 10K 축제 달리기' },
+  { id:'r014', year:2026, month:3,  day:22,  name:'도쿄마라톤',              loc:'도쿄 (일본)',    region:'해외', dist:['풀'], official:'https://www.marathon.tokyo', desc:'World Marathon Major, 추첨 당첨 필요' },
+  { id:'r015', year:2026, month:4,  day:5,   name:'보스턴마라톤',             loc:'보스턴 (미국)', region:'해외', dist:['풀'], official:'https://www.baa.org', desc:'세계 최고 권위 World Marathon Major, BQ 기록 필요' },
+  { id:'r016', year:2026, month:4,  day:12,  name:'대구국제마라톤',           loc:'대구',          region:'지방', dist:['풀','하프','10K'], official:'https://dgmarathon.com', desc:'평탄한 코스, 봄 PB 도전에 최적' },
+  { id:'r017', year:2026, month:4,  day:19,  name:'인천마라톤',              loc:'인천',          region:'경기', dist:['풀','하프','10K'], official:'https://incheonmarathon.com', desc:'송도 · 청라 신도시 코스' },
+  { id:'r018', year:2026, month:4,  day:26,  name:'런던마라톤',              loc:'런던 (영국)',    region:'해외', dist:['풀'], official:'https://www.londonmarathonevents.co.uk', desc:'타워브리지·버킹엄궁 경유 World Marathon Major' },
+  { id:'r019', year:2026, month:5,  day:3,   name:'광주마라톤',              loc:'광주 (전남)',    region:'지방', dist:['풀','하프','10K'], official:'https://gjmarathon.or.kr', desc:'광주 5·18 기념 봄 마라톤' },
+  { id:'r020', year:2026, month:5,  day:10,  name:'서울국제걷기대회·달리기', loc:'여의도 (서울)', region:'서울', dist:['10K','5K'], official:'', desc:'가족·시민 참여형 한강 달리기 이벤트' },
+  { id:'r021', year:2026, month:5,  day:17,  name:'파주마라톤',              loc:'파주 (경기)',    region:'경기', dist:['풀','하프','10K'], official:'', desc:'임진강변 평탄 코스, 수도권 봄 마라톤' },
+  { id:'r022', year:2026, month:9,  day:13,  name:'베를린마라톤',             loc:'베를린 (독일)', region:'해외', dist:['풀'], official:'https://www.bmw-berlin-marathon.com', desc:'세계 기록 산실 World Marathon Major, 초평탄 코스' },
+  { id:'r023', year:2026, month:9,  day:20,  name:'인천마라톤 (가을)',        loc:'인천',          region:'경기', dist:['풀','하프'], official:'', desc:'가을 시즌 개막 풀코스' },
+  { id:'r024', year:2026, month:10, day:4,   name:'시카고마라톤',             loc:'시카고 (미국)', region:'해외', dist:['풀'], official:'https://www.chicagomarathon.com', desc:'미시간 호수변 평탄 코스 World Marathon Major' },
+  { id:'r025', year:2026, month:10, day:18,  name:'춘천마라톤',              loc:'춘천 (강원)',    region:'지방', dist:['풀','하프','10K'], official:'https://www.chuncheonmarathon.com', desc:'한강변 단풍 속 국내 최고 가을 마라톤' },
+  { id:'r026', year:2026, month:10, day:25,  name:'경주마라톤',              loc:'경주 (경북)',    region:'지방', dist:['풀','하프','10K'], official:'https://www.gjmarathon.com', desc:'세계문화유산 코스, 불국사·첨성대 경유' },
+  { id:'r027', year:2026, month:11, day:1,   name:'JTBC 서울마라톤',         loc:'잠실 (서울)',    region:'서울', dist:['풀','하프'], official:'https://jtbcmarathon.com', desc:'잠실올림픽주경기장 출발·도착, 야경 하프코스' },
+  { id:'r028', year:2026, month:11, day:1,   name:'중앙서울마라톤',           loc:'광화문 (서울)', region:'서울', dist:['풀','하프','10K'], official:'https://www.joongang.co.kr/marathon', desc:'광화문~여의도 코스, 도심 풀코스' },
+  { id:'r029', year:2026, month:11, day:8,   name:'부산국제마라톤',           loc:'부산 (경남)',    region:'지방', dist:['풀','하프','10K'], official:'https://bim.busan.go.kr', desc:'광안대교·해운대 해변 코스' },
+  { id:'r030', year:2026, month:11, day:1,   name:'뉴욕마라톤',              loc:'뉴욕 (미국)',    region:'해외', dist:['풀'], official:'https://www.nyrr.org/tcsnycmarathon', desc:'5개 자치구 통과 World Marathon Major' },
+  { id:'r031', year:2026, month:12, day:6,   name:'호놀룰루마라톤',           loc:'하와이 (미국)', region:'해외', dist:['풀'], official:'https://www.honolulumarathon.org', desc:'다이아몬드헤드 코스, 겨울 해외 원정 마라톤' },
+];
+
+const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const DIST_COLOR  = { '풀':'#00d4aa', '하프':'#6366f1', '10K':'#f59e0b', '5K':'#94a3b8' };
+const WMM_IDS = new Set(['r014','r015','r018','r022','r024','r030','r003_wmm']); // World Marathon Majors
+
+function getRaceBookmarks() {
+  return JSON.parse(localStorage.getItem('raceBookmarks') || '[]');
+}
+function toggleRaceBookmark(id) {
+  const bk = getRaceBookmarks();
+  const idx = bk.indexOf(id);
+  if (idx === -1) bk.push(id); else bk.splice(idx, 1);
+  localStorage.setItem('raceBookmarks', JSON.stringify(bk));
+  renderRaceCalendar();
+}
+
+function daysUntil(year, month, day) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const race = new Date(year, month - 1, day);
+  return Math.round((race - today) / 86400000);
+}
+
+function renderRaceCard(race, bookmarks) {
+  const d     = daysUntil(race.year, race.month, race.day);
+  const isBk  = bookmarks.includes(race.id);
+  const isWMM = ['뉴욕마라톤','보스턴마라톤','도쿄마라톤','런던마라톤','베를린마라톤','시카고마라톤','호놀룰루마라톤'].includes(race.name);
+
+  let dBadge = '';
+  if (d < 0)       dBadge = `<span class="race-d past">종료</span>`;
+  else if (d === 0) dBadge = `<span class="race-d today">오늘!</span>`;
+  else if (d <= 7)  dBadge = `<span class="race-d soon">D-${d}</span>`;
+  else if (d <= 30) dBadge = `<span class="race-d near">D-${d}</span>`;
+  else              dBadge = `<span class="race-d far">D-${d}</span>`;
+
+  const distBadges = race.dist.map(dt =>
+    `<span class="race-dist-badge" style="background:${DIST_COLOR[dt] || '#555'}22;color:${DIST_COLOR[dt] || '#aaa'};border:1px solid ${DIST_COLOR[dt] || '#555'}44">${dt}</span>`
+  ).join('');
+
+  const linkBtn = race.official
+    ? `<a href="${race.official}" target="_blank" rel="noopener" class="race-link-btn">공식 사이트 →</a>`
+    : '';
+
+  return `
+    <div class="race-card${d < 0 ? ' race-past' : ''}">
+      <div class="race-card-head">
+        <div class="race-date-col">
+          <span class="race-mo">${race.month}월 ${race.day}일</span>
+          ${dBadge}
+        </div>
+        <button class="race-bk-btn${isBk ? ' bk-on' : ''}" onclick="toggleRaceBookmark('${race.id}')" title="북마크">
+          ${isBk ? '★' : '☆'}
+        </button>
+      </div>
+      <div class="race-card-body">
+        <div class="race-name">${isWMM ? '<span class="wmm-badge">⭐ WMM</span>' : ''}${race.name}</div>
+        <div class="race-loc">📍 ${race.loc}</div>
+        <div class="race-desc">${race.desc}</div>
+        <div class="race-footer">
+          <div class="race-dists">${distBadges}</div>
+          ${linkBtn}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderRaceCalendar() {
+  const year    = parseInt($('raceYear').value);
+  const distF   = $('raceDist').value;
+  const regionF = $('raceRegion').value;
+  const bkOnly  = $('raceBookmarked').checked;
+  const bookmarks = getRaceBookmarks();
+
+  let filtered = RACES.filter(r => r.year === year);
+  if (distF   !== 'all') filtered = filtered.filter(r => r.dist.includes(distF));
+  if (regionF !== 'all') filtered = filtered.filter(r => r.region === regionF);
+  if (bkOnly)            filtered = filtered.filter(r => bookmarks.includes(r.id));
+
+  // Group by month
+  const byMonth = {};
+  filtered.forEach(r => {
+    if (!byMonth[r.month]) byMonth[r.month] = [];
+    byMonth[r.month].push(r);
+  });
+
+  const months = Object.keys(byMonth).map(Number).sort((a,b) => a - b);
+  const today = new Date();
+
+  if (months.length === 0) {
+    $('raceCalendar').innerHTML = '<p class="race-empty">조건에 맞는 대회가 없습니다.</p>';
+    return;
+  }
+
+  $('raceCalendar').innerHTML = months.map(m => {
+    const races = byMonth[m].sort((a,b) => a.day - b.day);
+    const isPast = new Date(year, m - 1, 28) < today && m < today.getMonth() + 1 + (year === today.getFullYear() ? 0 : 12);
+    return `
+      <div class="race-month-block">
+        <div class="race-month-header">
+          <span class="race-month-name">${year}년 ${MONTH_NAMES[m-1]}</span>
+          <span class="race-month-count">${races.length}개 대회</span>
+        </div>
+        <div class="race-cards-wrap">
+          ${races.map(r => renderRaceCard(r, bookmarks)).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function initRace() {
+  ['raceYear','raceDist','raceRegion'].forEach(id => {
+    $(id).addEventListener('change', renderRaceCalendar);
+  });
+  $('raceBookmarked').addEventListener('change', renderRaceCalendar);
+  renderRaceCalendar();
+}
